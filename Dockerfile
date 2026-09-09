@@ -10,23 +10,38 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 创建目录
 RUN mkdir -p /etc/sing-box /etc/nginx/conf.d /app/config /app/web
 
-# 安装 sing-box
-ARG SINGBOX_VERSION=1.11.2
-RUN curl -fsSL -o /tmp/sing-box.tar.gz \
-    "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-amd64.tar.gz" \
-    && tar -xzf /tmp/sing-box.tar.gz -C /tmp \
-    && mv /tmp/sing-box /usr/local/bin/ \
-    && chmod +x /usr/local/bin/sing-box \
-    && rm -rf /tmp/sing-box.tar.gz
+# 安装 sing-box（官方最新 1.12.4）
+ARG SINGBOX_VERSION=1.12.4
+RUN set -eux; \
+    ARCH=$(dpkg --print-architecture); \
+    case "$ARCH" in \
+      amd64) ARCH_TAG='amd64' ;; \
+      arm64) ARCH_TAG='arm64' ;; \
+      *) echo "Unsupported arch: $ARCH" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL -o /tmp/sing-box.tar.gz \
+      "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-${ARCH_TAG}.tar.gz" \
+    || { echo "Failed to download sing-box v${SINGBOX_VERSION}"; exit 1; }; \
+    tar -xzf /tmp/sing-box.tar.gz -C /tmp; \
+    mv /tmp/sing-box /usr/local/bin/; \
+    chmod +x /usr/local/bin/sing-box; \
+    rm -rf /tmp/sing-box.tar.gz
 
-# 安装 Komari Agent
-ARG KOMARI_AGENT_VERSION=0.5.0
-RUN curl -fsSL -o /tmp/komari-agent.tar.gz \
-    "https://github.com/komari-monitor/komari-agent/releases/download/v${KOMARI_AGENT_VERSION}/komari-agent-${KOMARI_AGENT_VERSION}-linux-amd64.tar.gz" \
-    && tar -xzf /tmp/komari-agent.tar.gz -C /tmp \
-    && mv /tmp/komari-agent /usr/local/bin/ \
-    && chmod +x /usr/local/bin/komari-agent \
-    && rm -rf /tmp/komari-agent.tar.gz
+# 安装 Komari Agent（官方最新 1.4.3）
+ARG KOMARI_AGENT_VERSION=1.4.3
+RUN set -eux; \
+    ARCH=$(dpkg --print-architecture); \
+    case "$ARCH" in \
+      amd64) ARCH_TAG='amd64' ;; \
+      arm64) ARCH_TAG='arm64' ;; \
+      *) echo "Unsupported arch: $ARCH" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL -o /tmp/komari-agent.tar.gz \
+      "https://github.com/komari-monitor/komari-agent/releases/download/v${KOMARI_AGENT_VERSION}/komari-agent-linux-${ARCH_TAG}" \
+    || { echo "Failed to download Komari Agent v${KOMARI_AGENT_VERSION}"; exit 1; }; \
+    mv /tmp/komari-agent.tar.gz /usr/local/bin/komari-agent; \
+    chmod +x /usr/local/bin/komari-agent; \
+    rm -rf /tmp/komari-agent.tar.gz
 
 # 复制配置文件
 COPY config/singbox.json.template /app/config/
