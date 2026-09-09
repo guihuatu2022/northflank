@@ -1,0 +1,23 @@
+{
+  "inbounds": [
+    {
+      "type": "vless",
+      "listen": "{{LISTEN_ADDR}}",
+      "listen_port": {{LISTEN_PORT}},
+      "users": [
+        {
+          "uuid": "{{UUID}}"
+        }
+      ],
+      "transport": {
+        "type": "ws",
+        "path": "{{WS_PATH}}"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct"
+    }
+  ]
+}
