@@ -1,16 +1,19 @@
 # syntax=docker/dockerfile:1
 
-# 固定官方 sing-box 容器镜像版本，避免 Release 资产文件名变化。
+# Use the official sing-box image as a build stage.
 FROM ghcr.io/sagernet/sing-box:v1.14.0 AS singbox
 
+# Runtime image.
 FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Install runtime packages and required tools.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
+        jq \
         nginx \
         tini \
     && rm -rf /var/lib/apt/lists/* \
@@ -23,30 +26,38 @@ RUN apt-get update \
         /var/log/nginx \
         /var/run
 
-# 1. 从官方 sing-box 镜像复制可执行文件
+# Copy sing-box binary from the official image.
 COPY --from=singbox /usr/local/bin/sing-box /usr/local/bin/sing-box
+
 RUN chmod 0755 /usr/local/bin/sing-box \
     && /usr/local/bin/sing-box version
 
-# 2. 安装官方 Komari Agent (适配 amd64/arm64)
-ARG KOMARI_AGENT_VERSION=1.4.3
+# Download the latest Komari Agent asset matching the image architecture.
 RUN set -eux; \
-    ARCH=$(dpkg --print-architecture); \
+    ARCH="$(dpkg --print-architecture)"; \
     case "$ARCH" in \
-      amd64) ARCH_TAG='amd64' ;; \
-      arm64) ARCH_TAG='arm64' ;; \
-      *) echo "Unsupported arch: $ARCH" >&2; exit 1 ;; \
+        amd64) ASSET_ARCH="amd64" ;; \
+        arm64) ASSET_ARCH="arm64" ;; \
+        *) echo "Unsupported architecture: $ARCH" >&2; exit 1 ;; \
     esac; \
-    curl -fsSL -o /usr/local/bin/komari-agent \
-      "https://github.com/komari-monitor/komari-agent/releases/download/v${KOMARI_AGENT_VERSION}/komari-agent-linux-${ARCH_TAG}" \
-    && chmod 0755 /usr/local/bin/komari-agent
+    ASSET_URL="$(curl -fsSL https://api.github.com/repos/komari-monitor/komari-agent/releases/latest \
+        | jq -r --arg arch "$ASSET_ARCH" \
+            '.assets[] | select(.name == ("komari-agent-linux-" + $arch)) | .browser_download_url' \
+        | head -n 1)"; \
+    test -n "$ASSET_URL"; \
+    test "$ASSET_URL" != "null"; \
+    curl -fsSL "$ASSET_URL" -o /usr/local/bin/komari-agent; \
+    chmod 0755 /usr/local/bin/komari-agent; \
+    /usr/local/bin/komari-agent --help
 
+# Copy project files.
 COPY config/singbox.json.template /app/config/singbox.json.template
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
 COPY nginx/conf.d/default.conf.template /etc/nginx/conf.d/default.conf.template
 COPY web/ /app/web/
 COPY entrypoint.sh /app/entrypoint.sh
 
+# Validate runtime files during build.
 RUN chmod 0755 /app/entrypoint.sh \
     && nginx -t
 
