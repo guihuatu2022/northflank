@@ -1,16 +1,16 @@
 server {
     listen {{PORT}};
-    server_name localhost;
-    
+    server_name _;
+
     root /app/web;
     index index.html;
-    
-    # 伪装网站
-    location / {
-        try_files $uri $uri/ /index.html;
+
+    location ^~ /assets/ {
+        try_files $uri =404;
+        expires 1h;
+        add_header Cache-Control "public, max-age=3600";
     }
-    
-    # WebSocket 反代
+
     location {{WS_PATH}} {
         proxy_pass http://127.0.0.1:10000;
         proxy_http_version 1.1;
@@ -19,15 +19,16 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # WebSocket 超时设置
         proxy_read_timeout 86400s;
         proxy_send_timeout 86400s;
     }
-    
-    # 404 处理
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
     error_page 404 /404.html;
+
     location = /404.html {
         internal;
     }
