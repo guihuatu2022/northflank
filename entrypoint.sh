@@ -35,19 +35,9 @@ fi
 if [ -n "$KOMARI_AGENT_TOKEN" ] && [ -n "$KOMARI_SERVER_URL" ]; then
   echo "→ Komari Agent: Enabled"
   START_KOMARI_AGENT="true"
-  
-  # 修复：官方格式为 --month-rotate 1 (开启) 或 --month-rotate 0 (关闭)
-  if [ "$KOMARI_AGENT_MONTH_RESET" = "false" ]; then
-    MONTH_ROTATE_FLAG="--month-rotate 0"
-    echo "  - Monthly traffic reset: Disabled"
-  else
-    MONTH_ROTATE_FLAG="--month-rotate 1"
-    echo "  - Monthly traffic reset: Enabled"
-  fi
 else
   echo "→ Komari Agent: Disabled (missing KOMARI_AGENT_TOKEN or KOMARI_SERVER_URL)"
   START_KOMARI_AGENT="false"
-  MONTH_ROTATE_FLAG=""
 fi
 
 # ============================================
@@ -98,12 +88,8 @@ if [ "$START_KOMARI_AGENT" = "true" ]; then
   echo "  - Endpoint: $KOMARI_SERVER_URL"
   echo "  - Token: ${KOMARI_AGENT_TOKEN:0:8}... (masked)"
   
-  # 检查二进制是否存在，避免直接退出
   if [ -x "/usr/local/bin/komari-agent" ]; then
-    /usr/local/bin/komari-agent \
-      --endpoint "$KOMARI_SERVER_URL" \
-      --token "$KOMARI_AGENT_TOKEN" \
-      $MONTH_ROTATE_FLAG &
+    /usr/local/bin/komari-agent -e "$KOMARI_SERVER_URL" -t "$KOMARI_AGENT_TOKEN" &
     KOMARI_PID=$!
     echo "✓ Komari Agent process started (PID: $KOMARI_PID)"
   else
