@@ -1,62 +1,42 @@
+# syntax=docker/dockerfile:1
+
+# 固定官方 sing-box 容器镜像版本，避免 Release 资产文件名变化。
+FROM ghcr.io/sagernet/sing-box:v1.14.0 AS singbox
+
 FROM debian:bookworm-slim
 
-# 安装依赖
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    nginx \
-    curl \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=noninteractive
 
-# 创建目录
-RUN mkdir -p /etc/sing-box /etc/nginx/conf.d /app/config /app/web
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        nginx \
+        tini \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p \
+        /app/config \
+        /app/web \
+        /etc/sing-box \
+        /etc/nginx/conf.d \
+        /var/cache/nginx \
+        /var/log/nginx \
+        /var/run
 
-# 安装 sing-box（官方最新 1.14.0）
-ARG SINGBOX_VERSION=1.14.0
-RUN set -eux; \
-    ARCH=$(dpkg --print-architecture); \
-    case "$ARCH" in \
-      amd64) ARCH_TAG='amd64' ;; \
-      arm64) ARCH_TAG='arm64' ;; \
-      *) echo "Unsupported arch: $ARCH" >&2; exit 1 ;; \
-    esac; \
-    curl -fsSL -o /tmp/sing-box.tar.gz \
-      "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-${ARCH_TAG}.tar.gz" \
-    || { echo "Failed to download sing-box v${SINGBOX_VERSION}"; exit 1; }; \
-    tar -xzf /tmp/sing-box.tar.gz -C /tmp; \
-    mv /tmp/sing-box /usr/local/bin/; \
-    chmod +x /usr/local/bin/sing-box; \
-    rm -rf /tmp/sing-box.tar.gz
+# 从官方 sing-box 镜像复制可执行文件。
+# 官方镜像的 sing-box 程序通常位于 /usr/local/bin/sing-box。
+COPY --from=singbox /usr/local/bin/sing-box /usr/local/bin/sing-box
 
-# 安装 Komari Agent（官方最新 1.4.3）
-ARG KOMARI_AGENT_VERSION=1.4.3
-RUN set -eux; \
-    ARCH=$(dpkg --print-architecture); \
-    case "$ARCH" in \
-      amd64) ARCH_TAG='amd64' ;; \
-      arm64) ARCH_TAG='arm64' ;; \
-      *) echo "Unsupported arch: $ARCH" >&2; exit 1 ;; \
-    esac; \
-    curl -fsSL -o /tmp/komari-agent.tar.gz \
-      "https://github.com/komari-monitor/komari-agent/releases/download/v${KOMARI_AGENT_VERSION}/komari-agent-linux-${ARCH_TAG}" \
-    || { echo "Failed to download Komari Agent v${KOMARI_AGENT_VERSION}"; exit 1; }; \
-    mv /tmp/komari-agent.tar.gz /usr/local/bin/komari-agent; \
-    chmod +x /usr/local/bin/komari-agent; \
-    rm -rf /tmp/komari-agent.tar.gz
+RUN chmod 0755 /usr/local/bin/sing-box \
+    && /usr/local/bin/sing-box version
 
-# 复制配置文件
-COPY config/singbox.json.template /app/config/
-COPY nginx/nginx.conf /etc/nginx/
-COPY nginx/conf.d/default.conf.template /etc/nginx/conf.d/
-
-# 复制伪装网站
+COPY config/singbox.json.template /app/config/singbox.json.template
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY nginx/conf.d/default.conf.template /etc/nginx/conf.d/default.conf.template
 COPY web/ /app/web/
+COPY entrypoint.sh /app/entrypoint.sh
 
-# 复制启动脚本
-COPY entrypoint.sh /app/
-RUN chmod +x /app/entrypoint.sh
+RUN chmod 0755 /app/entrypoint.sh \
+    && nginx -t
 
-# 清理
-RUN apt-get clean && rm -rf /var/cache/apt/*
-
-# 默认命令
+ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/app/entrypoint.sh"]
