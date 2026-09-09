@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 创建目录
 RUN mkdir -p /etc/sing-box /etc/nginx/conf.d /app/config /app/web
 
-# 安装 sing-box（官方最新 1.12.4）
-ARG SINGBOX_VERSION=1.12.4
+# 安装 sing-box（官方最新 1.14.0）
+ARG SINGBOX_VERSION=1.14.0
 RUN set -eux; \
     ARCH=$(dpkg --print-architecture); \
     case "$ARCH" in \
