@@ -36,13 +36,13 @@ if [ -n "$KOMARI_AGENT_TOKEN" ] && [ -n "$KOMARI_SERVER_URL" ]; then
   echo "→ Komari Agent: Enabled"
   START_KOMARI_AGENT="true"
   
-  # 检查月度流量归零
-  if [ "$KOMARI_AGENT_MONTH_RESET" != "false" ]; then
-    MONTH_ROTATE_FLAG="--month-rotate"
-    echo "  - Monthly traffic reset: Enabled"
-  else
-    MONTH_ROTATE_FLAG=""
+  # 修复：官方格式为 --month-rotate 1 (开启) 或 --month-rotate 0 (关闭)
+  if [ "$KOMARI_AGENT_MONTH_RESET" = "false" ]; then
+    MONTH_ROTATE_FLAG="--month-rotate 0"
     echo "  - Monthly traffic reset: Disabled"
+  else
+    MONTH_ROTATE_FLAG="--month-rotate 1"
+    echo "  - Monthly traffic reset: Enabled"
   fi
 else
   echo "→ Komari Agent: Disabled (missing KOMARI_AGENT_TOKEN or KOMARI_SERVER_URL)"
@@ -98,15 +98,17 @@ if [ "$START_KOMARI_AGENT" = "true" ]; then
   echo "  - Endpoint: $KOMARI_SERVER_URL"
   echo "  - Token: ${KOMARI_AGENT_TOKEN:0:8}... (masked)"
   
-  # 启动 Komari Agent（后台运行）
-  /usr/local/bin/komari-agent \
-    --endpoint "$KOMARI_SERVER_URL" \
-    --token "$KOMARI_AGENT_TOKEN" \
-    $MONTH_ROTATE_FLAG &
-  
-  KOMARI_PID=$!
-  sleep 1
-  echo "✓ Komari Agent started (PID: $KOMARI_PID)"
+  # 检查二进制是否存在，避免直接退出
+  if [ -x "/usr/local/bin/komari-agent" ]; then
+    /usr/local/bin/komari-agent \
+      --endpoint "$KOMARI_SERVER_URL" \
+      --token "$KOMARI_AGENT_TOKEN" \
+      $MONTH_ROTATE_FLAG &
+    KOMARI_PID=$!
+    echo "✓ Komari Agent process started (PID: $KOMARI_PID)"
+  else
+    echo "ERROR: /usr/local/bin/komari-agent binary not found!"
+  fi
 fi
 
 # 启动 sing-box（前台运行）
