@@ -10,6 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
+        curl \
         nginx \
         tini \
     && rm -rf /var/lib/apt/lists/* \
@@ -22,12 +23,23 @@ RUN apt-get update \
         /var/log/nginx \
         /var/run
 
-# 从官方 sing-box 镜像复制可执行文件。
-# 官方镜像的 sing-box 程序通常位于 /usr/local/bin/sing-box。
+# 1. 从官方 sing-box 镜像复制可执行文件
 COPY --from=singbox /usr/local/bin/sing-box /usr/local/bin/sing-box
-
 RUN chmod 0755 /usr/local/bin/sing-box \
     && /usr/local/bin/sing-box version
+
+# 2. 安装官方 Komari Agent (适配 amd64/arm64)
+ARG KOMARI_AGENT_VERSION=1.4.3
+RUN set -eux; \
+    ARCH=$(dpkg --print-architecture); \
+    case "$ARCH" in \
+      amd64) ARCH_TAG='amd64' ;; \
+      arm64) ARCH_TAG='arm64' ;; \
+      *) echo "Unsupported arch: $ARCH" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL -o /usr/local/bin/komari-agent \
+      "https://github.com/komari-monitor/komari-agent/releases/download/v${KOMARI_AGENT_VERSION}/komari-agent-linux-${ARCH_TAG}" \
+    && chmod 0755 /usr/local/bin/komari-agent
 
 COPY config/singbox.json.template /app/config/singbox.json.template
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
