@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - Nebula CLI</title>
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">Nebula CLI</a>
+            <ul class="nav-links">
+                <li><a href="/downloads.html">Downloads</a></li>
+                <li><a href="/docs.html">Docs</a></li>
+                <li><a href="/changelog.html">Changelog</a></li>
+                <li><a href="/about.html">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <section class="page-header">
+            <div class="container">
+                <h1>Documentation</h1>
+                <p>Learn how to use Nebula CLI effectively</p>
+            </div>
+        </section>
+
+        <section class="docs-content">
+            <div class="container">
+                <div class="doc-section">
+                    <h2>Quick Start</h2>
+                    <ol>
+                        <li>
+                            <strong>Install Nebula CLI</strong>
+                            <pre><code>curl -fsSL https://nebula-cli.dev/install.sh | bash</code></pre>
+                        </li>
+                        <li>
+                            <strong>Authenticate</strong>
+                            <pre><code>nebula auth login</code></pre>
+                        </li>
+                        <li>
+                            <strong>Deploy your first resource</strong>
+                            <pre><code>nebula deploy my-app</code></pre>
+                        </li>
+                    </ol>
+                </div>
+
+                <div class="doc-section">
+                    <h2>Core Commands</h2>
+                    <div class="command-list">
+                        <div class="command-item">
+                            <code>nebula init [project-name]</code>
+                            <p>Initialize a new Nebula project</p>
+                        </div>
+                        <div class="command-item">
+                            <code>nebula deploy [resource]</code>
+                            <p>Deploy resources to cloud providers</p>
+                        </div>
+                        <div class="command-item">
+                            <code>nebula status [resource]</code>
+                            <p>Check the status of deployed resources</p>
+                        </div>
+                        <div class="command-item">
+                            <code>nebula logs [resource]</code>
+                            <p>View logs from deployed resources</p>
+                        </div>
+                        <div class="command-item">
+                            <code>nebula destroy [resource]</code>
+                            <p>Remove deployed resources</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="doc-section">
+                    <h2>Configuration</h2>
+                    <p>Create a <code>nebula.yaml</code> file in your project root:</p>
+                    <pre><code>project:
+  name: my-app
+  region: us-east-1
+
+resources:
+  - type: compute
+    size: standard
+    count: 3
+
+  - type: database
+    engine: postgres
+    version: 15</code></pre>
+                </div>
+
+                <div class="doc-section">
+                    <h2>Supported Cloud Providers</h2>
+                    <ul>
+                        <li>Amazon Web Services (AWS)</li>
+                        <li>Google Cloud Platform (GCP)</li>
+                        <li>Microsoft Azure</li>
+                        <li>DigitalOcean</li>
+                        <li>Linode</li>
+                    </ul>
+                </div>
+
+                <div class="doc-section">
+                    <h2>Need Help?</h2>
+                    <p>
+                        Check out our <a href="https://github.com/nebula-cli/nebula-cli/issues" target="_blank">GitHub Issues</a> 
+                        or join the discussion on <a href="#" target="_blank">Discord</a>.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Nebula CLI. Open source under MIT License.</p>
+        </div>
+    </footer>
+</body>
+</html>
